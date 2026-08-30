@@ -391,7 +391,7 @@ with st.container():
         with col1:
             pref_major = st.selectbox(tr("label_major"), options=worldwide_majors)
         with col2:
-            edu_level = st.selectbox(tr("label_edu"), choices=["Diploma", "Bachelor's Degree", "Master's Degree"])
+            edu_level = st.selectbox(tr("label_edu"), options=["Diploma", "Bachelor's Degree", "Master's Degree"])
         with col3:
             interests = st.text_input(tr("label_interests"))
 
@@ -399,7 +399,7 @@ with st.container():
         with col4:
             dev_goal = st.text_input(tr("label_goal"))
         with col5:
-            avail_time = st.selectbox(tr("label_duration"), choices=learning_durations)
+            avail_time = st.selectbox(tr("label_duration"), options=learning_durations)
         with col6:
             skills_input = st.text_input(tr("label_skills"), placeholder=tr("skills_placeholder"))
 
