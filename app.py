@@ -389,7 +389,7 @@ with st.container():
     with st.form("path_form"):
         col1, col2, col3 = st.columns(3)
         with col1:
-            pref_major = st.selectbox(tr("label_major"), choices=worldwide_majors)
+            pref_major = st.selectbox(tr("label_major"), options=worldwide_majors)
         with col2:
             edu_level = st.selectbox(tr("label_edu"), choices=["Diploma", "Bachelor's Degree", "Master's Degree"])
         with col3:
