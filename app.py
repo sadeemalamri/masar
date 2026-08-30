@@ -7,7 +7,7 @@ import urllib.error
 from urllib.parse import urlparse
 
 import gradio as gr
-from openai import OpenAI
+import google.generativeai as genai
 
 try:
     from dotenv import load_dotenv
@@ -16,7 +16,7 @@ except ImportError:
     pass
 
 # ============================================================
-# 1) API KEY
+# 1) API KEY CONFIGURATION (GOOGLE GEMINI)
 # ============================================================
 def get_secret(name: str) -> str:
     """Load secret from Google Colab Secrets, a local .env file, or environment variables."""
@@ -29,15 +29,15 @@ def get_secret(name: str) -> str:
         pass
     return os.getenv(name, "")
 
-OPENAI_API_KEY = get_secret("OPENAI_API_KEY")
+GEMINI_API_KEY = get_secret("GEMINI_API_KEY") or get_secret("GOOGLE_API_KEY")
 
-if not OPENAI_API_KEY:
+if not GEMINI_API_KEY:
     raise ValueError(
-        "OPENAI_API_KEY was not found. Add it to Colab Secrets, "
+        "GEMINI_API_KEY was not found. Add it to Colab Secrets, "
         "a local .env file, or set it as an environment variable."
     )
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
 
 
 # ============================================================
@@ -319,7 +319,7 @@ def validate_learning_resources(resources):
 
 
 # ============================================================
-# 6) AGENT 1
+# 6) AGENT 1 (GEMINI API)
 # ============================================================
 def agent_1_analysis(major, edu_level, interests, goal, duration, skills, lang="en"):
     months = extract_months(duration)
@@ -369,19 +369,19 @@ Return strict JSON with:
 - roadmap: array of exactly {months} objects {{"month": "1", "icon": "Step", "title": "Python Foundations"}}
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a safe career analysis agent. Return only valid JSON."},
-            {"role": "user", "content": prompt},
-        ],
-        response_format={"type": "json_object"},
+    model = genai.GenerativeModel(
+        model_name="gemini-3.6-flash",
+        system_instruction="You are a safe career analysis agent. Return only valid JSON."
     )
-    return json.loads(response.choices[0].message.content)
+    response = model.generate_content(
+        prompt,
+        generation_config={"response_mime_type": "application/json"}
+    )
+    return json.loads(response.text)
 
 
 # ============================================================
-# 7) AGENT 2
+# 7) AGENT 2 (GEMINI API)
 # ============================================================
 def agent_2_evaluation(agent1_data, duration, lang="en"):
     months = extract_months(duration)
@@ -403,15 +403,15 @@ IMPORTANT ROADMAP RULE:
 Return the optimized result in the IDENTICAL strict JSON format.
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a quality-control agent. Return only valid JSON."},
-            {"role": "user", "content": prompt},
-        ],
-        response_format={"type": "json_object"},
+    model = genai.GenerativeModel(
+        model_name="gemini-3.6-flash",
+        system_instruction="You are a quality-control agent. Return only valid JSON."
     )
-    result = json.loads(response.choices[0].message.content)
+    response = model.generate_content(
+        prompt,
+        generation_config={"response_mime_type": "application/json"}
+    )
+    result = json.loads(response.text)
 
     roadmap = result.get("roadmap", [])
     if len(roadmap) != months:
@@ -424,7 +424,7 @@ Return the optimized result in the IDENTICAL strict JSON format.
 
 
 # ============================================================
-# 8) AGENT 3
+# 8) AGENT 3 (GEMINI API)
 # ============================================================
 def agent_3_url_finder(evaluated_data):
     path_title = evaluated_data.get("path_title", "Career Development")
@@ -445,16 +445,16 @@ Return strict JSON:
 }}
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You provide educational resources. Return only valid JSON and avoid fabricated URLs."},
-            {"role": "user", "content": prompt},
-        ],
-        response_format={"type": "json_object"},
+    model = genai.GenerativeModel(
+        model_name="gemini-3.6-flash",
+        system_instruction="You provide educational resources. Return only valid JSON and avoid fabricated URLs."
+    )
+    response = model.generate_content(
+        prompt,
+        generation_config={"response_mime_type": "application/json"}
     )
 
-    data = json.loads(response.choices[0].message.content)
+    data = json.loads(response.text)
     data["resources"] = validate_learning_resources(data.get("resources", []))
     return data
 
